@@ -1,5 +1,5 @@
 use structopt::{clap, StructOpt};
-use tempfile::tempfile;
+use tempfile::NamedTempFile;
 use std::path::Path;
 use std::io::BufReader;
 use std::io::prelude::*;
@@ -45,30 +45,42 @@ fn gsed_regular_file(path: &String, search: &str, replace: &str) {
             return ;
         },
     };
+    /// pour avoir les permitions
     /// TODO si opt.interactive est false remplacer sans chercher a comprendre
     let buf = BufReader::new(&file);
-    let mut tempfile = match tempfile() {
+    let mut tmpfile = match NamedTempFile::new() {
         Ok(f) => f,
         Err(e) => {
-            eprintln!("Error: gsed: {}: {}", e, path);
+            eprintln!("Error: gsed: {}", e);
+            drop(file);
             ::std::process::exit(1);
-        }
+        },
     };
 
     for line in buf.lines() {
-        let l = line.unwrap();
+        let mut l = line.unwrap();
         if l.contains(search) == true {
-            l.replace(search, replace);
+            l = l.replace(search, replace);
         }
-        match tempfile.write_all(&l.as_bytes()) {
+        match tmpfile.write_all(&l.as_bytes()) {
             Ok(_) => (),
             Err(e) => {
                 eprintln!("Error: gsed: {}", e);
+                drop(file);
                 ::std::process::exit(1);
             },
         };
     }
-    drop(file);
+    let metadata = match file.metadata() {
+        Ok(m) => m,
+        Err(e) => {
+            eprintln!("Error: gsed: {}", e);
+            drop(file);
+            ::std::process::exit(1);
+        },
+    };
+    ::std::fs::set_permissions(tmpfile.path(), metadata.permissions());
+    tmpfile.persist(path);
 }
 
 
