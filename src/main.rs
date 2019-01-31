@@ -45,36 +45,45 @@ struct Opt {
 ///     si c'est un dir et directoy == true
 ///         on ajoute les dir qu'on croise quand on parse a opt.path
 ///    println!("{:?}", opt);
-///
-fn replace_regex(path: &String, search: &str, replace: &str) {
-    let regex = Regex::new(search).unwrap();
-    let file = File::open(path).unwrap();
-    let buf = BufReader::new(&file);
-    let mut tmpfile = NamedTempFile::new().unwrap();
 
-    for line in buf.lines() {
-        let mut l = line.unwrap();
-        l = regex.replace_all(&l, replace).to_string();
-        l.push('\n');
-        tmpfile.write_all(&l.as_bytes()).unwrap();
-    }
-
-    let metadata = file.metadata().unwrap();
-    ::std::fs::set_permissions(tmpfile.path(), metadata.permissions()).unwrap();
-    tmpfile.persist(path).unwrap();
-}
-
-fn replace_regular(path: &String, search: &str, replace: &str) {
-    let file = File::open(path).unwrap();
-    let buf = BufReader::new(&file);
-    let mut tmpfile = NamedTempFile::new().unwrap();
-
+fn loop_replace_file_regular (buf: BufReader<&File>,
+                             tmpfile: &mut NamedTempFile,
+                             search: &str,
+                             replace: &str)
+{
     for line in buf.lines() {
         let mut l = line.unwrap();
         l = l.replace(search, replace);
         l.push('\n');
         tmpfile.write_all(&l.as_bytes()).unwrap();
     }
+}
+
+fn loop_replace_file_regex (buf: BufReader<&File>,
+                           tmpfile: &mut NamedTempFile,
+                           search: &str,
+                           replace: &str)
+{
+    let regex = Regex::new(search).unwrap();
+    for line in buf.lines() {
+        let mut l = line.unwrap();
+        l = regex.replace_all(&l, replace).to_string();
+        l.push('\n');
+        tmpfile.write_all(&l.as_bytes()).unwrap();
+    }
+}
+
+fn replace_file(path: &String, search: &str, replace: &str, regex: &bool) {
+    let file = File::open(path).unwrap();
+    let buf = BufReader::new(&file);
+    let mut tmpfile = NamedTempFile::new().unwrap();
+
+    if *regex {
+        loop_replace_file_regex(buf, &mut tmpfile, search, replace)
+    } else {
+        loop_replace_file_regular(buf, &mut tmpfile, search, replace)
+    }
+
     let metadata = file.metadata().unwrap();
     ::std::fs::set_permissions(tmpfile.path(), metadata.permissions()).unwrap();
     tmpfile.persist(path).unwrap();
@@ -95,10 +104,10 @@ fn main() {
         let p: &Path = Path::new(path.as_str());
 
         if p.exists() {
-            if p.is_file() && !opt.regex {
-                replace_regular(&path, search, replace);
-            } else if p.is_file() && opt.regex {
-                replace_regex(&path, search, replace);
+            if p.is_file() {
+                replace_file(&path, search, replace, &opt.regex);
+//            } else if p.is_dir() && !opt.recursive && !opt.regex {
+ //               replace_dir_regex(&path, search, replace);
             } else {
                 eprintln!("Error: gsed: wrong type of file: {}", path);
             }
