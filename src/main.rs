@@ -1,9 +1,13 @@
+extern crate regex;
+
 use structopt::{clap, StructOpt};
 use tempfile::NamedTempFile;
 use std::path::Path;
 use std::io::BufReader;
 use std::io::prelude::*;
 use std::fs::File;
+use regex::Regex;
+
 
 #[derive(Debug, StructOpt)]
 #[structopt(name =  "gsed")]
@@ -25,8 +29,13 @@ struct Opt {
     #[structopt(name = "path")]
     paths: Vec<String>,
 
-    #[structopt(long = "directory", short = "d")]
+    /// Opt for recursive
+    #[structopt(long = "recursive", short = "R")]
     directory: bool,
+
+    /// Opt for regex match
+    #[structopt(long = "regex", short = "r")]
+    regex: bool,
 
 }
 
@@ -36,8 +45,26 @@ struct Opt {
 ///     si c'est un dir et directoy == true
 ///         on ajoute les dir qu'on croise quand on parse a opt.path
 ///    println!("{:?}", opt);
+///
+fn replace_regex(path: &String, search: &str, replace: &str) {
+    let regex = Regex::new(search).unwrap();
+    let file = File::open(path).unwrap();
+    let buf = BufReader::new(&file);
+    let mut tmpfile = NamedTempFile::new().unwrap();
 
-fn gsed_regular_file(path: &String, search: &str, replace: &str) {
+    for line in buf.lines() {
+        let mut l = line.unwrap();
+        l = regex.replace_all(&l, replace).to_string();
+        l.push('\n');
+        tmpfile.write_all(&l.as_bytes()).unwrap();
+    }
+
+    let metadata = file.metadata().unwrap();
+    ::std::fs::set_permissions(tmpfile.path(), metadata.permissions()).unwrap();
+    tmpfile.persist(path).unwrap();
+}
+
+fn replace_regular(path: &String, search: &str, replace: &str) {
     let file = File::open(path).unwrap();
     let buf = BufReader::new(&file);
     let mut tmpfile = NamedTempFile::new().unwrap();
@@ -45,11 +72,12 @@ fn gsed_regular_file(path: &String, search: &str, replace: &str) {
     for line in buf.lines() {
         let mut l = line.unwrap();
         l = l.replace(search, replace);
+        l.push('\n');
         tmpfile.write_all(&l.as_bytes()).unwrap();
     }
     let metadata = file.metadata().unwrap();
-    ::std::fs::set_permissions(tmpfile.path(), metadata.permissions());
-    tmpfile.persist(path);
+    ::std::fs::set_permissions(tmpfile.path(), metadata.permissions()).unwrap();
+    tmpfile.persist(path).unwrap();
 }
 
 
@@ -62,21 +90,20 @@ fn main() {
 
     let search = opt.search.as_ref().unwrap();
     let replace = opt.replace.as_ref().unwrap();
-    for path in opt.paths.iter() {
-    //    let p: &Path = Path::new(path.as_str());
 
-        gsed_regular_file(&path, &search, &replace);
-        /*
-           if p.exist() == true {
-           if p.is_file() == true {
-           gsed_regular_file(&path, &opt);
-           } else if p.is_dir() == true {
-           gsed_directory_recursive(&p, &opt);
-           } else {
-           eprintn!("Error: gsed: wrong type of file: {}", path);
-           ::std::process::exit(1);
-           }
-           }
-           */
+    for path in opt.paths.iter() {
+        let p: &Path = Path::new(path.as_str());
+
+        if p.exists() {
+            if p.is_file() && !opt.regex {
+                replace_regular(&path, search, replace);
+            } else if p.is_file() && opt.regex {
+                replace_regex(&path, search, replace);
+            } else {
+                eprintln!("Error: gsed: wrong type of file: {}", path);
+            }
+        } else {
+            eprintln!("Error: gsed: no such file or directory: {}", path);
+        }
     }
 }

@@ -7,3 +7,4 @@ edition = "2018"
 [dependencies]
 structopt = { version = "0.2", default-features = false }
 tempfile = "3.0.5"
+regex = "1"
