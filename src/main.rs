@@ -38,47 +38,16 @@ struct Opt {
 ///    println!("{:?}", opt);
 
 fn gsed_regular_file(path: &String, search: &str, replace: &str) {
-    let file = match File::open(path) {
-        Ok(f) => f,
-        Err(e) => {
-            eprintln!("Error: gsed: {}: {}", e, path);
-            return ;
-        },
-    };
-    /// pour avoir les permitions
-    /// TODO si opt.interactive est false remplacer sans chercher a comprendre
+    let file = File::open(path).unwrap();
     let buf = BufReader::new(&file);
-    let mut tmpfile = match NamedTempFile::new() {
-        Ok(f) => f,
-        Err(e) => {
-            eprintln!("Error: gsed: {}", e);
-            drop(file);
-            ::std::process::exit(1);
-        },
-    };
+    let mut tmpfile = NamedTempFile::new().unwrap();
 
     for line in buf.lines() {
         let mut l = line.unwrap();
-        if l.contains(search) == true {
-            l = l.replace(search, replace);
-        }
-        match tmpfile.write_all(&l.as_bytes()) {
-            Ok(_) => (),
-            Err(e) => {
-                eprintln!("Error: gsed: {}", e);
-                drop(file);
-                ::std::process::exit(1);
-            },
-        };
+        l = l.replace(search, replace);
+        tmpfile.write_all(&l.as_bytes()).unwrap();
     }
-    let metadata = match file.metadata() {
-        Ok(m) => m,
-        Err(e) => {
-            eprintln!("Error: gsed: {}", e);
-            drop(file);
-            ::std::process::exit(1);
-        },
-    };
+    let metadata = file.metadata().unwrap();
     ::std::fs::set_permissions(tmpfile.path(), metadata.permissions());
     tmpfile.persist(path);
 }
