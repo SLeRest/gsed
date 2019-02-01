@@ -1,6 +1,6 @@
-use gsed::gsed::Gsed;
+use std::path::Path;
+use gsed::replace::Replace;
 use gsed::opt::Opt;
-
 use structopt::StructOpt;
 
 fn main() {
@@ -8,16 +8,15 @@ fn main() {
     if opt.paths.is_empty() {
         opt.paths.push("./".to_string());
     }
-    let gsed: Gsed = Gsed::new(opt);
+    let replace: Replace = Replace::new(opt);
 
-    println!("{:?}", gsed.opt);
-    /*
-    for path in opt.paths.iter() {
+    
+    for path in replace.opt.paths.iter() {
         let p: &Path = Path::new(path.as_str());
 
         if p.exists() {
             if p.is_file() {
-                replace_file(&path, search, replace, &opt.regex);
+                replace.replace_file(&path);
 //            } else if p.is_dir() && !opt.recursive && !opt.regex {
  //               replace_dir_regex(&path, search, replace);
             } else {
@@ -27,5 +26,4 @@ fn main() {
             eprintln!("Error: gsed: no such file or directory: {}", path);
         }
     }
-    */
 }

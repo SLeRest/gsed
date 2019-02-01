@@ -1,2 +1,2 @@
-pub mod gsed;
+pub mod replace;
 pub mod opt;
