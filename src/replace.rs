@@ -3,6 +3,8 @@
 use tempfile::NamedTempFile;
 use std::io::BufReader;
 use std::io::prelude::*;
+use std::path::Path;
+use std::fs;
 use std::fs::File;
 use regex::Regex;
 use crate::opt::Opt;
@@ -61,5 +63,31 @@ impl Replace {
         let metadata = file.metadata().unwrap();
         ::std::fs::set_permissions(tmpfile.path(), metadata.permissions()).unwrap();
         tmpfile.persist(path).unwrap();
+    }
+
+    pub fn replace_dir(&self, path: &Path) {
+        let readdir = match fs::read_dir(path) {
+            Ok(rdir) => rdir,
+            Err(e) => {
+                eprintln!("Error: gsed: {}: {}", e, path.to_str().unwrap());
+                return ;
+            },
+        };
+        for file in readdir {
+            let f = file.unwrap(); // match
+            let ftype = match f.file_type() {
+                Ok(ft) => ft,
+                Err(e) => {
+                    eprintln!("Error: gsed: {}", e);
+                    return ;
+                },
+            };
+            // elseif is dir
+            if ftype.is_file() {
+                self.replace_file(&f.path().into_os_string().into_string().unwrap());
+            } else {
+                eprintln!("Error: gsed: wrong type of file");
+            }
+        }
     }
 }

@@ -17,8 +17,8 @@ fn main() {
         if p.exists() {
             if p.is_file() {
                 replace.replace_file(&path);
-//            } else if p.is_dir() && !opt.recursive && !opt.regex {
- //               replace_dir_regex(&path, search, replace);
+            } else if p.is_dir() {
+               replace.replace_dir(p);
             } else {
                 eprintln!("Error: gsed: wrong type of file: {}", path);
             }
