@@ -3,7 +3,7 @@
 use tempfile::NamedTempFile;
 use std::io::BufReader;
 use std::io::prelude::*;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::fs;
 use std::fs::File;
 use regex::Regex;
@@ -73,8 +73,16 @@ impl Replace {
                 return ;
             },
         };
+        let mut vdirs: Vec<PathBuf> = Vec::new();
+
         for file in readdir {
-            let f = file.unwrap(); // match
+            let f = match file {
+                Ok(ff) => ff,
+                Err(e) => {
+                    eprintln!("Error: gsed: {}", e);
+                    continue ;
+                }
+            };
             let ftype = match f.file_type() {
                 Ok(ft) => ft,
                 Err(e) => {
@@ -82,12 +90,20 @@ impl Replace {
                     return ;
                 },
             };
-            // elseif is dir
             if ftype.is_file() {
                 self.replace_file(&f.path().into_os_string().into_string().unwrap());
+            } else if ftype.is_dir() {
+                if self.opt.recursive {
+                    vdirs.push(f.path());
+                } else {
+                    continue ;
+                }
             } else {
                 eprintln!("Error: gsed: wrong type of file");
             }
+        }
+        for vdir in vdirs {
+            self.replace_dir(vdir.as_path());
         }
     }
 }
