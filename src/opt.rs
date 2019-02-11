@@ -28,4 +28,7 @@ pub struct Opt {
     #[structopt(long = "regex", short = "r")]
     pub regex: bool,
 
+    /// All
+    #[structopt(long = "all", short = "a")]
+    pub all: bool,
 }
