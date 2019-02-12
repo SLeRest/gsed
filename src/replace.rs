@@ -60,11 +60,30 @@ impl Replace {
                                 tmpfile: &mut NamedTempFile)
     {
         let regex = Regex::new(self.search.as_str()).unwrap();
+        let mut i = 1;
         for line in buf.lines() {
             let mut l = line.unwrap();
-            l = regex.replace_all(&l, self.replace.as_str()).to_string();
+            if regex.is_match(l.as_str()) {
+                if self.opt.all {
+                    l = regex.replace_all(&l, self.replace.as_str()).to_string();
+                } else {
+                    print!("l {}: {}\ty/n: ", i, l);
+                    ::std::io::stdout().flush();
+                    let mut input = String::new();
+                    match ::std::io::stdin().read_line(&mut input) {
+                        Ok(_) => {},
+                        Err(e) => {
+                            eprintln!("Error: gsed: {}", e);
+                        },
+                    }
+                    if input.trim() == "y" {
+                        l = regex.replace_all(&l, self.replace.as_str()).to_string();
+                    }
+                }
+            }
             l.push('\n');
             tmpfile.write_all(&l.as_bytes()).unwrap();
+            i += 1;
         }
     }
 
