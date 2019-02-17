@@ -9,8 +9,8 @@ use structopt::{StructOpt, clap};
 pub struct Opt {
 
     /// Search
-    #[structopt(name = "SEARCH", required_unless = "file")]
-    pub search: Option<String>,
+    #[structopt(name = "PATTERN", required_unless = "file")]
+    pub pattern: Option<String>,
 
     /// Replace
     #[structopt(name = "REPLACE", required_unless = "rep")]

@@ -34,7 +34,8 @@ impl Replace {
             let mut l = line.unwrap();
             if l.contains(self.search.as_str()) {
                 if self.opt.all {
-                    l = l.replace(self.search.as_str(), self.replace.as_str()).to_string();
+                    l = l.replace(self.search.as_str(),
+                                    self.replace.as_str()).to_string();
                 } else {
                     print!("l {}: {}\ty/n: ", i, l);
                     ::std::io::stdout().flush();
@@ -46,7 +47,8 @@ impl Replace {
                         },
                     }
                     if input.trim() == "y" {
-                        l = l.replace(self.search.as_str(), self.replace.as_str()).to_string();
+                        l = l.replace(self.search.as_str(),
+                                    self.replace.as_str()).to_string();
                     }
                 }
             }
@@ -65,7 +67,8 @@ impl Replace {
             let mut l = line.unwrap();
             if regex.is_match(l.as_str()) {
                 if self.opt.all {
-                    l = regex.replace_all(&l, self.replace.as_str()).to_string();
+                    l = regex.replace_all(&l,
+                                self.replace.as_str()).to_string();
                 } else {
                     print!("l {}: {}\ty/n: ", i, l);
                     ::std::io::stdout().flush();
@@ -77,7 +80,8 @@ impl Replace {
                         },
                     }
                     if input.trim() == "y" {
-                        l = regex.replace_all(&l, self.replace.as_str()).to_string();
+                        l = regex.replace_all(&l,
+                                    self.replace.as_str()).to_string();
                     }
                 }
             }
